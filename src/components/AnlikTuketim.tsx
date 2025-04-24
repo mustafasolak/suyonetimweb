@@ -71,7 +71,7 @@ const AnlikTuketim: React.FC = () => {
         tension: 0.1
       },
       {
-        label: 'Sıcaklık (°C)',
+        label: 'Sıcaklık  (°C)',
         data: sensorData.map(data => data.sicaklik).reverse(),
         borderColor: 'rgb(54, 162, 235)',
         tension: 0.1
