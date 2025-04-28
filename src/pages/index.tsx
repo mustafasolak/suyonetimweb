@@ -4,6 +4,31 @@ import { db } from '../lib/firebase';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { FaWater, FaChartLine, FaFilter, FaClock } from 'react-icons/fa';
+import dynamic from 'next/dynamic';
+
+// Create a client-side only component for the timestamp
+const TimestampDisplay = () => {
+  const [currentTime, setCurrentTime] = useState<string>('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(format(new Date(), 'HH:mm:ss'));
+    };
+    
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center space-x-4">
+      <span className="text-gray-400">Son Güncelleme:</span>
+      <span className="font-medium">{currentTime}</span>
+    </div>
+  );
+};
 
 interface WaterData {
   dayKey: string;
@@ -113,99 +138,153 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Su Tüketim Takip Sistemi</h1>
-        
-        {/* Filtreleme Seçenekleri */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Filtreleme Seçenekleri</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Zaman Aralığı</label>
-              <select
-                className="w-full p-2 border rounded-md"
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-              >
-                <option value="24h">Son 24 Saat</option>
-                <option value="7d">Son 7 Gün</option>
-                <option value="30d">Son 30 Gün</option>
-                <option value="custom">Özel Tarih Aralığı</option>
-              </select>
-            </div>
-            {timeRange === 'custom' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Başlangıç Tarihi</label>
-                  <input
-                    type="date"
-                    className="w-full p-2 border rounded-md"
-                    value={format(startDate, 'yyyy-MM-dd')}
-                    onChange={(e) => setStartDate(new Date(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bitiş Tarihi</label>
-                  <input
-                    type="date"
-                    className="w-full p-2 border rounded-md"
-                    value={format(endDate, 'yyyy-MM-dd')}
-                    onChange={(e) => setEndDate(new Date(e.target.value))}
-                  />
-                </div>
-              </div>
-            )}
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Sidebar */}
+      <div className="fixed left-0 top-0 h-full w-64 bg-gray-800 shadow-lg">
+        <div className="p-6">
+          <div className="flex items-center space-x-3 mb-8">
+            <FaWater className="text-blue-500 text-2xl" />
+            <h1 className="text-xl font-bold">Su Yönetimi</h1>
           </div>
+          <nav className="space-y-2">
+            <a href="#" className="flex items-center space-x-3 p-3 rounded-lg bg-gray-700 text-white">
+              <FaChartLine />
+              <span>Dashboard</span>
+            </a>
+            <a href="#" className="flex items-center space-x-3 p-3 rounded-lg text-gray-400 hover:bg-gray-700 hover:text-white transition-colors">
+              <FaClock />
+              <span>Geçmiş Veriler</span>
+            </a>
+          </nav>
         </div>
+      </div>
 
-        {/* Anlık Veriler */}
-        {latestData && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">Anlık Veriler</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Anlık Debi</p>
-                <p className="text-2xl font-bold">{latestData.flowRate_Lpm.toFixed(3)} L/dk</p>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Son 10 Saniyelik Tüketim</p>
-                <p className="text-2xl font-bold">{latestData.delta_mL.toFixed(1)} mL</p>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Toplam Tüketim</p>
-                <p className="text-2xl font-bold">{latestData.total_mL.toFixed(1)} mL</p>
-              </div>
+      {/* Main Content */}
+      <div className="ml-64 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-2xl font-bold">Su Tüketim Takip Sistemi</h1>
+            <TimestampDisplay />
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-400">Son Güncelleme:</span>
+              <span className="font-medium">{format(new Date(), 'HH:mm:ss')}</span>
             </div>
           </div>
-        )}
 
-        {/* Grafikler */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Debi Grafiği</h2>
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={waterData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="timestamp" 
-                  tick={<CustomizedAxisTick />}
-                  height={timeRange === '24h' ? 30 : 80}
-                />
-                <YAxis />
-                <Tooltip 
-                  labelFormatter={(value) => formatTime(value)}
-                  formatter={(value) => [`${value} L/dk`, 'Debi']}
-                />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="flowRate_Lpm" 
-                  stroke="#3B82F6" 
-                  name="Debi (L/dk)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          {/* Real-time Data Cards */}
+          {latestData && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-gray-800 rounded-xl p-6 shadow-lg transform hover:scale-105 transition-transform">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-gray-400">Anlık Debi</h3>
+                  <FaWater className="text-blue-500" />
+                </div>
+                <p className="text-3xl font-bold">{latestData.flowRate_Lpm.toFixed(3)}</p>
+                <p className="text-gray-400">L/dk</p>
+              </div>
+              <div className="bg-gray-800 rounded-xl p-6 shadow-lg transform hover:scale-105 transition-transform">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-gray-400">Son 10 Saniyelik</h3>
+                  <FaClock className="text-green-500" />
+                </div>
+                <p className="text-3xl font-bold">{latestData.delta_mL.toFixed(1)}</p>
+                <p className="text-gray-400">mL</p>
+              </div>
+              <div className="bg-gray-800 rounded-xl p-6 shadow-lg transform hover:scale-105 transition-transform">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-gray-400">Toplam Tüketim</h3>
+                  <FaChartLine className="text-purple-500" />
+                </div>
+                <p className="text-3xl font-bold">{latestData.total_mL.toFixed(1)}</p>
+                <p className="text-gray-400">mL</p>
+              </div>
+            </div>
+          )}
+
+          {/* Filter Section */}
+          <div className="bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+            <div className="flex items-center space-x-2 mb-4">
+              <FaFilter className="text-blue-500" />
+              <h2 className="text-xl font-semibold">Filtreleme Seçenekleri</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Zaman Aralığı</label>
+                <select
+                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+                >
+                  <option value="24h">Son 24 Saat</option>
+                  <option value="7d">Son 7 Gün</option>
+                  <option value="30d">Son 30 Gün</option>
+                  <option value="custom">Özel Tarih Aralığı</option>
+                </select>
+              </div>
+              {timeRange === 'custom' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Başlangıç Tarihi</label>
+                    <input
+                      type="date"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={format(startDate, 'yyyy-MM-dd')}
+                      onChange={(e) => setStartDate(new Date(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Bitiş Tarihi</label>
+                    <input
+                      type="date"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={format(endDate, 'yyyy-MM-dd')}
+                      onChange={(e) => setEndDate(new Date(e.target.value))}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Chart Section */}
+          <div className="bg-gray-800 rounded-xl shadow-lg p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <FaChartLine className="text-blue-500" />
+              <h2 className="text-xl font-semibold">Debi Grafiği</h2>
+            </div>
+            <div className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={waterData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tick={<CustomizedAxisTick />}
+                    height={timeRange === '24h' ? 30 : 80}
+                    stroke="#9CA3AF"
+                  />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1F2937',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      color: '#fff'
+                    }}
+                    labelFormatter={(value) => formatTime(value)}
+                    formatter={(value) => [`${value} L/dk`, 'Debi']}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="flowRate_Lpm" 
+                    stroke="#3B82F6" 
+                    strokeWidth={2}
+                    dot={false}
+                    name="Debi (L/dk)"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
